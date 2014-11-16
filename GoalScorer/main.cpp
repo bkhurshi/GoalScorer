@@ -50,18 +50,31 @@ void drawNet(void)
 	glEnd();
 }
 
+void drawBall(void)
+{
+	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
+	GLUquadric* qobj = gluNewQuadric();
+	glPushMatrix();
+	glTranslatef(10.0, -9.0, -5.0);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
+	gluSphere(qobj, 1, 9, 9);
+	glColor3f(0,0,1.);
+	glPopMatrix();
+	gluDeleteQuadric(qobj);
+	glEndList();
+}
+
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	drawWalls();
 	drawNet();
+	drawBall();
 	glutSwapBuffers();
-
 }
 
 void init(void)
 {
-
 	/* Setup cube vertex data. */
 	wallV[0][0] = wallV[1][0] = wallV[2][0] = wallV[3][0] = -30;
 	wallV[4][0] = wallV[5][0] = wallV[6][0] = wallV[7][0] = 30;
@@ -89,8 +102,6 @@ void init(void)
 	gluLookAt(0.0, 0.0, 30.0,  /* eye is at (0,0,5) */
 		0.0, 0.0, 0.0,      /* center is at (0,0,0) */
 		0.0, 1.0, 0.);      /* up is in positive Y direction */
-
-
 }
 
 int main(int argc, char **argv)
