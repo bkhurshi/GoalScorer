@@ -436,7 +436,7 @@ void showInfo() {
 
 	if (goalsScored >= 5) {
 		ss << "Congratulations, you have scored all 5 goals!" << ends;
-		drawString(ss.str().c_str(), 1, 100, color, font);
+		drawString(ss.str().c_str(), 1, 125, color, font);
 	}
 
     // restore projection matrix
