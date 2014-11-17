@@ -2,7 +2,16 @@
 #include <GL/glut.h>
 
 #define HAPTIC // comment this line to take the haptic off
-   
+
+void mouseCB(int button, int stat, int x, int y);
+void keyboardCB(unsigned char key, int x, int y);
+void idleCB();
+
+int goalsScored = 0;
+void *font = GLUT_BITMAP_8_BY_13;
+bool mouseLeftDown;
+bool mouseRightDown;
+float mouseX, mouseY;
 
 // haptic code begin
 #ifdef HAPTIC
@@ -128,6 +137,11 @@ void display(void)
 	drawWalls();
 	drawNet();
 	drawBall();
+	#ifdef HAPTIC
+	drawSceneHaptics();
+	drawHapticCursor();
+	#endif
+	showInfo();
 	glutSwapBuffers();
 }
 
@@ -160,6 +174,10 @@ void init(void)
 	gluLookAt(0.0, 0.0, 30.0,  /* eye is at (0,0,5) */
 		0.0, 0.0, 0.0,      /* center is at (0,0,0) */
 		0.0, 1.0, 0.);      /* up is in positive Y direction */
+
+	glutIdleFunc(idleCB);                       // redraw when idle
+	glutKeyboardFunc(keyboardCB);
+	glutMouseFunc(mouseCB);
 }
 
 // haptic code begin
@@ -282,12 +300,12 @@ void drawSceneHaptics()
     hlBeginShape(HL_SHAPE_FEEDBACK_BUFFER, gWallsId);
 
     // Use OpenGL commands to create geometry.
-       glPushMatrix();
+    glPushMatrix();
 
     // tramsform camera
-    glTranslatef(0, 0, cameraDistance);
-    glRotatef(cameraAngleX, 1, 0, 0);   // pitch
-    glRotatef(cameraAngleY, 0, 1, 0);   // heading
+    //glTranslatef(0, 0, cameraDistance);
+    //glRotatef(cameraAngleX, 1, 0, 0);   // pitch
+    //glRotatef(cameraAngleY, 0, 1, 0);   // heading
 
     //if(dlUsed)
     //    glCallList(listId);     // render with display list
@@ -371,6 +389,124 @@ void drawHapticCursor()
 }
 #endif
 // haptic code finish
+
+///////////////////////////////////////////////////////////////////////////////
+// write 2d text using GLUT
+// The projection matrix must be set to orthogonal before call this function.
+///////////////////////////////////////////////////////////////////////////////
+void drawString(const char *str, int x, int y, float color[4], void *font)
+{
+    glPushAttrib(GL_LIGHTING_BIT | GL_CURRENT_BIT); // lighting and color mask
+    glDisable(GL_LIGHTING);     // need to disable lighting for proper text color
+
+    glColor4fv(color);          // set text color
+    glRasterPos2i(x, y);        // place text position
+
+    // loop all characters in the string
+    while(*str)
+    {
+        glutBitmapCharacter(font, *str);
+        ++str;
+    }
+
+    glEnable(GL_LIGHTING);
+    glPopAttrib();
+}
+
+void showInfo() {
+	// backup current model-view matrix
+    glPushMatrix();                     // save current modelview matrix
+    glLoadIdentity();                   // reset modelview matrix
+
+    // set to 2D orthogonal projection
+    glMatrixMode(GL_PROJECTION);     // switch to projection matrix
+    glPushMatrix();                  // save current projection matrix
+    glLoadIdentity();                // reset projection matrix
+    gluOrtho2D(0, 400, 0, 300);  // set to orthogonal projection
+
+    float color[4] = {1, 1, 1, 1};
+
+    stringstream ss;
+
+	ss << "You can press the Esc key at any time to abort the program." << ends;
+	drawString(ss.str().c_str(), 1, 1, color, font);
+
+	ss << "You have scored " << goalsScored << " goals so far!" << ends;
+	drawString(ss.str().c_str(), 1, 100, color, font);
+
+	if (goalsScored >= 5) {
+		ss << "Congratulations, you have scored all 5 goals!" << ends;
+		drawString(ss.str().c_str(), 1, 100, color, font);
+	}
+
+    // restore projection matrix
+    glPopMatrix();                   // restore to previous projection matrix
+
+    // restore modelview matrix
+    glMatrixMode(GL_MODELVIEW);      // switch to modelview matrix
+    glPopMatrix();                   // restore to previous modelview matrix
+}
+
+void keyboardCB(unsigned char key, int x, int y)
+{
+    switch(key)
+    {
+    case 27: // ESCAPE
+        clearSharedMem();
+        exit(0);
+        break;
+
+    default:
+        ;
+    }
+    glutPostRedisplay();
+}
+
+void mouseCB(int button, int state, int x, int y)
+{
+    mouseX = x;
+    mouseY = y;
+
+    if(button == GLUT_LEFT_BUTTON)
+    {
+        if(state == GLUT_DOWN)
+        {
+            mouseLeftDown = true;
+        }
+        else if(state == GLUT_UP)
+            mouseLeftDown = false;
+    }
+
+    else if(button == GLUT_RIGHT_BUTTON)
+    {
+        if(state == GLUT_DOWN)
+        {
+            mouseRightDown = true;
+        }
+        else if(state == GLUT_UP)
+            mouseRightDown = false;
+    }
+}
+
+void idleCB()
+{
+	#ifdef HAPTIC
+	HLerror error;
+
+    while (HL_ERROR(error = hlGetError()))
+    {
+        fprintf(stderr, "HL Error: %s\n", error.errorCode);
+        
+        if (error.errorCode == HL_DEVICE_ERROR)
+        {
+            hduPrintError(stderr, &error.errorInfo,
+                "Error during haptic rendering\n");
+        }
+    }
+	#endif
+
+    glutPostRedisplay();
+}
 
 int main(int argc, char **argv)
 {
