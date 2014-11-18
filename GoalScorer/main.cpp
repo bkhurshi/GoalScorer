@@ -1,11 +1,23 @@
 
+#include <windows.h>
 #include <GL/glut.h>
+
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
+using std::stringstream;
+using std::cout;
+using std::endl;
+using std::ends;
 
 #define HAPTIC // comment this line to take the haptic off
 
 void mouseCB(int button, int stat, int x, int y);
 void keyboardCB(unsigned char key, int x, int y);
 void idleCB();
+
+void showInfo();
 
 int goalsScored = 0;
 void *font = GLUT_BITMAP_8_BY_13;
@@ -452,7 +464,7 @@ void keyboardCB(unsigned char key, int x, int y)
     switch(key)
     {
     case 27: // ESCAPE
-        clearSharedMem();
+        //clearSharedMem();
         exit(0);
         break;
 
