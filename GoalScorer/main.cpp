@@ -16,6 +16,7 @@ using std::ends;
 void mouseCB(int button, int stat, int x, int y);
 void keyboardCB(unsigned char key, int x, int y);
 void idleCB();
+void reshapeCB(int w, int h);
 
 void showInfo();
 
@@ -188,6 +189,7 @@ void init(void)
 		0.0, 1.0, 0.);      /* up is in positive Y direction */
 
 	glutIdleFunc(idleCB);                       // redraw when idle
+	glutReshapeFunc(reshapeCB);
 	glutKeyboardFunc(keyboardCB);
 	glutMouseFunc(mouseCB);
 }
@@ -275,11 +277,24 @@ void updateWorkspace()
     glGetIntegerv(GL_VIEWPORT, viewport);
 
     hlMatrixMode(HL_TOUCHWORKSPACE);
-    //hlLoadIdentity();
+
+	//hlPushMatrix();
+    hlLoadIdentity();
+	//hlScaled(2, 2, 2);
+	//hlPopMatrix();
+
+	//hlWorkspace(-30*1, 30*1, -10*1, 10*1, -30*1, 30*1);
+	//hlOrtho(-30*1, 30*1, -10*1, 10*1, 0.1*1, -60*1);
+	//hlWorkspace(-80, -80, -70, 80, 80, 20);
+	hlWorkspace(-10.0, -10.0, -5.0,
+		        10.0,  10.0, 5.0);
+	hlOrtho(0.0, 1.0,
+		    0.0, 1.0,
+			0.0, 1.0);
     
     // Fit haptic workspace to view volume.
-    //hluFitWorkspace(projection);
-
+    hluFitWorkspace(projection);
+	/*
 	HLdouble minPoint[3], maxPoint[3];
 	minPoint[0]=-10;
 	minPoint[1]=-10;
@@ -287,7 +302,8 @@ void updateWorkspace()
 	maxPoint[0]=10;
 	maxPoint[1]=10;
 	maxPoint[2]=10;
-hluFitWorkspaceBox(modelview, minPoint, maxPoint);
+	hluFitWorkspaceBox(modelview, minPoint, maxPoint);
+	*/
 
     // Compute cursor scale.
     gCursorScale = hluScreenToModelScale(modelview, projection, viewport);
@@ -358,46 +374,45 @@ void drawSceneHaptics()
 *******************************************************************************/
 void drawHapticCursor()
 {
-    static const double kCursorRadius = 0.5;
-    static const double kCursorHeight = 1.5;
-    static const int kCursorTess = 15;
-    HLdouble proxyxform[16];
+		//cout<<"redraw"<<endl;
+		static const double kCursorRadius = 0.05;
+		static const int kCursorTess = 15;
+		HLdouble proxytransform[16];
 
-    GLUquadricObj *qobj = 0;
+		GLUquadricObj *qobj = 0;
 
-    glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT);
-    glPushMatrix();
+		glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_LIGHTING_BIT);
+		glPushMatrix();
 
-    if (!gCursorDisplayList)
-    {
-        gCursorDisplayList = glGenLists(1);
-        glNewList(gCursorDisplayList, GL_COMPILE);
-        qobj = gluNewQuadric();
-               
-        gluCylinder(qobj, 0.0, kCursorRadius, kCursorHeight,
-                    kCursorTess, kCursorTess);
-        glTranslated(0.0, 0.0, kCursorHeight);
-        gluCylinder(qobj, kCursorRadius, 0.0, kCursorHeight / 5.0,
-                    kCursorTess, kCursorTess);
-    
-        gluDeleteQuadric(qobj);
-        glEndList();
-    }
-    
-    // Get the proxy transform in world coordinates for haptic device.
-    hlGetDoublev(HL_PROXY_TRANSFORM, proxyxform);
-    glMultMatrixd(proxyxform);
+		if (!gCursorDisplayList)
+		{
+			//cout<<"draw cursor display list"<<endl;
+			gCursorDisplayList = glGenLists(1);
+			glNewList(gCursorDisplayList, GL_COMPILE);
+			qobj = gluNewQuadric();
+			glPushMatrix();
+			glColor3f(1.,0,0); 
+			gluSphere(qobj, kCursorRadius*2 * 4, kCursorTess, kCursorTess);
+			glColor3f(0,0,1.);
+			gluCylinder(qobj,kCursorRadius * 4,kCursorRadius * 4,10,100,5);
+			glPopMatrix();
+			gluDeleteQuadric(qobj);
+			glEndList();
+		}  
 
-    // Apply the local cursor scale factor.
-    glScaled(gCursorScale, gCursorScale, gCursorScale);
-
-    glEnable(GL_COLOR_MATERIAL);
-    glColor3f(0.0, 0.5, 1.0);
-
-    glCallList(gCursorDisplayList);
-
-    glPopMatrix(); 
-    glPopAttrib();
+		// Apply the local position/rotation transform of the haptic device proxy.
+		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
+		glMultMatrixd(proxytransform);
+        
+		// Apply the local cursor scale factor.
+		glScaled(gCursorScale, gCursorScale, gCursorScale);
+	
+		glEnable(GL_NORMALIZE);
+		glEnable(GL_COLOR_MATERIAL);
+		glColor3f(0.0, 0.5, 1.0);
+		glCallList(gCursorDisplayList);
+		glPopMatrix(); 
+		glPopAttrib();
 }
 #endif
 // haptic code finish
@@ -457,6 +472,27 @@ void showInfo() {
     // restore modelview matrix
     glMatrixMode(GL_MODELVIEW);      // switch to modelview matrix
     glPopMatrix();                   // restore to previous modelview matrix
+}
+
+void reshapeCB(int w, int h)
+{
+	/*
+    // set viewport to be the entire window
+    glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+    // set perspective viewing frustum
+    float aspectRatio = (float)w / h;
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    //glFrustum(-aspectRatio, aspectRatio, -1, 1, 1, 100);
+    gluPerspective(60.0f, (float)(w)/h, 1.0f, 1000.0f); // FOV, AspectRatio, NearClip, FarClip
+
+    // switch to modelview matrix in order to set scene
+    glMatrixMode(GL_MODELVIEW);
+	*/
+	#ifdef HAPTIC
+	updateWorkspace();
+	#endif
 }
 
 void keyboardCB(unsigned char key, int x, int y)
@@ -524,7 +560,7 @@ int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	glutInitWindowSize(800, 450); // window size
+	glutInitWindowSize(800*2, 450*2); // window size
 	glutInitWindowPosition(100, 100); // window location
 	int handle = glutCreateWindow("Goal Scorer"); // param is the title of window
 	//glutFullScreen();
