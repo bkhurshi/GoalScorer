@@ -457,13 +457,16 @@ void showInfo() {
 
 	ss << "You can press the Esc key at any time to abort the program." << ends;
 	drawString(ss.str().c_str(), 1, 1, color, font);
+	ss.str("");
 
 	ss << "You have scored " << goalsScored << " goals so far!" << ends;
-	drawString(ss.str().c_str(), 1, 100, color, font);
+	drawString(ss.str().c_str(), 1, 10, color, font);
+	ss.str("");
 
 	if (goalsScored >= 5) {
 		ss << "Congratulations, you have scored all 5 goals!" << ends;
 		drawString(ss.str().c_str(), 1, 125, color, font);
+		ss.str("");
 	}
 
     // restore projection matrix
