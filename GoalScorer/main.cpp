@@ -44,6 +44,8 @@ HLuint gWallsId;
 HLuint gNetId;
 HLuint gBallId;
 
+GLfloat ballX = 10.0, ballY = -9.0, ballZ = -5.0;
+
 #define CURSOR_SCALE_SIZE 60
 static double gCursorScale;
 static GLuint gCursorDisplayList = 0;
@@ -135,7 +137,7 @@ void drawBall(void)
 	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
 	GLUquadric* qobj = gluNewQuadric();
 	glPushMatrix();
-	glTranslatef(10.0, -9.0, -5.0);
+	glTranslatef(ballX, ballY, ballZ);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
 	gluSphere(qobj, 1, 9, 9);
 	glColor3f(0,0,1.);
