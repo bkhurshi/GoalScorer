@@ -11,7 +11,7 @@ using std::cout;
 using std::endl;
 using std::ends;
 
-#define HAPTIC // comment this line to take the haptic off
+//#define HAPTIC // comment this line to take the haptic off
 
 void mouseCB(int button, int stat, int x, int y);
 void keyboardCB(unsigned char key, int x, int y);
@@ -25,6 +25,7 @@ void *font = GLUT_BITMAP_8_BY_13;
 bool mouseLeftDown;
 bool mouseRightDown;
 float mouseX, mouseY;
+GLfloat ballX = 10.0, ballY = -9.0, ballZ = -5.0;
 
 // haptic code begin
 #ifdef HAPTIC
@@ -481,6 +482,7 @@ void showInfo() {
 
 void reshapeCB(int w, int h)
 {
+	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 	/*
     // set viewport to be the entire window
     glViewport(0, 0, (GLsizei)w, (GLsizei)h);
