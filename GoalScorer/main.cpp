@@ -28,8 +28,12 @@ bool mouseLeftDown;
 bool mouseRightDown;
 float mouseX, mouseY;
 
+
 ofstream logFile;
 int trialNumber;
+
+GLfloat ballPos[] = {10.0, -9.0, -5.0};
+GLfloat prevBallPos[3];
 
 // haptic code begin
 #ifdef HAPTIC
@@ -49,7 +53,8 @@ HLuint gWallsId;
 HLuint gNetId;
 HLuint gBallId;
 
-GLfloat ballX = 10.0, ballY = -9.0, ballZ = -5.0;
+HLdouble prevProxyTransform[16];
+HLdouble proxytransform[16];
 
 #define CURSOR_SCALE_SIZE 60
 static double gCursorScale;
@@ -171,7 +176,9 @@ void drawBall(void)
 	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
 	GLUquadric* qobj = gluNewQuadric();
 	glPushMatrix();
+
 	glTranslatef(ballDnew[0], ballDnew[1], ballDnew[2]);
+
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
 	gluSphere(qobj, ballR, 9, 9);
 	glColor3f(0,0,1.);
@@ -315,6 +322,11 @@ void initHL()
     gWallsId = hlGenShapes(1);
 	gNetId = hlGenShapes(2);
 	gBallId = hlGenShapes(3);
+
+	for (int i = 0; i < 16; i++) {
+		prevProxyTransform[i] = 0.0;
+		proxytransform[i] = 0.0;
+	}
 
 	 // Setup event callbacks.
     hlAddEventCallback(HL_EVENT_TOUCH, gBallId, HL_CLIENT_THREAD, 
@@ -468,7 +480,7 @@ void drawHapticCursor()
 		//cout<<"redraw"<<endl;
 		static const double kCursorRadius = 0.05;
 		static const int kCursorTess = 15;
-		HLdouble proxytransform[16];
+		//HLdouble proxytransform[16];
 
 		GLUquadricObj *qobj = 0;
 
@@ -492,6 +504,9 @@ void drawHapticCursor()
 		}  
 
 		// Apply the local position/rotation transform of the haptic device proxy.
+		for (int i = 0; i < 16; i++) {
+			prevProxyTransform[i] = proxytransform[i];
+		}
 		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
 		glMultMatrixd(proxytransform);
         
