@@ -121,19 +121,22 @@ void drawWalls(void)
 	}
 }
 
+GLfloat netP[2][2] = {{-3.65, 3.65}, {-10.0, -7.56}};
+GLfloat netZ = -59.9;
 void drawNet(void)
 {
 	GLfloat black[4] = {1.0, 1.0, 1.0, 1.0};
 	glBegin(GL_QUADS);
 	glNormal3f(0.0, 0.0, 1.0);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, black); 
-	glVertex3f(3.65, -10.0, -59.9);
-	glVertex3f(3.65, -7.56, -59.9);
-	glVertex3f(-3.65, -7.56, -59.9);
-	glVertex3f(-3.65, -10.0, -59.9);
+	glVertex3f(netP[0][0], netP[1][0], netZ);
+	glVertex3f(netP[0][0], netP[1][1], netZ);
+	glVertex3f(netP[0][1], netP[1][1], netZ);
+	glVertex3f(netP[0][1], netP[1][0], netZ);
 	glEnd();
 }
 GLfloat ballM = 1;
+const GLfloat ballDorig[3] = {10.0, -9.0, -5.0};
 GLfloat ballDold[3] = {10.0, -9.0, -5.0};
 GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
 GLfloat ballVold[3] = {0.0, 0.0, 0.0};
@@ -174,23 +177,53 @@ void drawBall(void)
 
 void wallReflection(void)
 {
-	if(ballDnew[0] - 1 <= wallP[0][0] || ballDnew[0] + 1 >= wallP[0][1])
+	if(ballDnew[0] - ballR <= wallP[0][0] || ballDnew[0] + ballR >= wallP[0][1])
 	{
 		//Left wall or Right wall
 		ballVold[0] = ballVnew[0];
 		ballVnew[0] = - ballVold[0];
 	}
-	if(ballDnew[1] - 1 <= wallP[1][0] || ballDnew[1] + 1 >= wallP[1][1])
+	if(ballDnew[1] - ballR <= wallP[1][0] || ballDnew[1] + ballR >= wallP[1][1])
 	{
 		//Bottom wall or Top wall
 		ballVold[1] = ballVnew[1];
 		ballVnew[1] = - ballVold[1];
 	}
-	if(ballDnew[2] - 1 <= wallP[2][0] || ballDnew[2] + 1 >= wallP[2][1])
+	if(ballDnew[2] - ballR <= wallP[2][0] || ballDnew[2] + ballR >= wallP[2][1])
 	{
 		//Back wall
 		ballVold[2] = ballVnew[2];
 		ballVnew[2] = - ballVold[2];
+	}
+}
+
+void goalDetection(void)
+{
+	if(ballDnew[2] - ballR > netZ)
+	{
+		wallReflection(); // don't want to reflect off wall in case of a goal
+		return; // not a goal
+	}
+	if ((ballDnew[0] - ballR >= netP[0][0] && ballDnew[0] + ballR <= netP[0][1]) && 
+		(ballDnew[1] - ballR >= netP[1][0] && ballDnew[1] + ballR <= netP[1][1]))
+	{
+		// in Net
+		goalsScored++;
+		
+		// reset ball to start at original position
+		for(int i = 0; i < 3; i++)
+		{
+			ballDnew[i] = ballDorig[i];
+			ballDold[i] = ballDorig[i];
+			ballVnew[i] = 0.0;
+			ballVold[i] = 0.0;
+			ballPnew[i] = 0.0;
+			ballPold[i] = 0.0;
+		}
+	}
+	else
+	{
+		wallReflection(); // don't reflect unless goal
 	}
 }
 
@@ -200,7 +233,8 @@ void display(void)
 	drawWalls();
 	drawNet();
 	drawBall();
-	wallReflection();
+
+	goalDetection();
 	#ifdef HAPTIC
 	drawSceneHaptics();
 	drawHapticCursor();
