@@ -13,7 +13,7 @@
 using namespace std;
 
 
-//#define HAPTIC // comment this line to take the haptic off
+#define HAPTIC // comment this line to take the haptic off
 
 void mouseCB(int button, int stat, int x, int y);
 void keyboardCB(unsigned char key, int x, int y);
@@ -32,9 +32,11 @@ float mouseX, mouseY;
 ofstream logFile;
 int trialNumber;
 
-GLfloat ballPos[] = {10.0, -9.0, -5.0};
-GLfloat prevBallPos[3];
-GLfloat ballVelocity[] = {0.0, 0.0, 0.0};
+
+//GLfloat ballPos[] = {10.0, -9.0, -5.0};
+//GLfloat prevBallPos[3];
+//GLfloat ballVelocity[] = {0.0, 0.0, 0.0};
+
 
 // haptic code begin
 #ifdef HAPTIC
@@ -179,7 +181,7 @@ GLdouble ballR = 1.0;
 
 void calcNewBallPos() {
 	for (int i = 0; i < 3; i++) {
-		prevBallPos[i] = ballPos[i];
+		ballDold[i] = ballDnew[i];
 	}
 }
 
@@ -195,7 +197,7 @@ void drawBall(void)
 	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
 	GLUquadric* qobj = gluNewQuadric();
 	glPushMatrix();
-	calcNewBallPos();
+	//calcNewBallPos();
 	glTranslatef(ballDnew[0], ballDnew[1], ballDnew[2]);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
 	gluSphere(qobj, ballR, 9, 9);
