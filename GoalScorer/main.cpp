@@ -36,6 +36,13 @@ int trialNumber;
 //GLfloat ballPos[] = {10.0, -9.0, -5.0};
 //GLfloat prevBallPos[3];
 //GLfloat ballVelocity[] = {0.0, 0.0, 0.0};
+GLfloat ballM = 1;
+GLfloat ballDold[3] = {10.0, -9.0, -5.0};
+GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
+GLfloat ballVold[3] = {0.0, 0.0, 0.0};
+GLfloat ballVnew[3] = {0.0, 0.0, 0.0};
+GLfloat ballPold[3] = {0.0, 0.0, 0.0};
+GLfloat ballPnew[3] = {0.0, 0.0, 0.0};
 
 
 // haptic code begin
@@ -58,9 +65,18 @@ HLuint gBallId;
 
 HLdouble prevProxyTransform[16];
 HLdouble proxytransform[16];
-HLdouble ballMomentum[] = {0.0, 0.0, 0.0};
+//HLdouble ballMomentum[] = {0.0, 0.0, 0.0};
 // ball/cursor mass
-HLdouble ballM, cursorM;
+//HLdouble ballM, cursorM;
+GLfloat cursorM = 10;
+// position
+GLfloat cursorDold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorDnew[3] = {0.0, 0.0, 0.0};
+GLfloat cursorVold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
+// momentum
+GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
 
 #define CURSOR_SCALE_SIZE 60
 static double gCursorScale;
@@ -87,14 +103,21 @@ void updateWorkspace();
 void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread, 
                                    HLcache *cache, void *userdata)
 {
-	HLdouble cursorVelocity[3];
+	//HLdouble cursorVelocity[3];
 	for (int i = 0; i < 3; i++) {
 		//a12
-		cursorVelocity[i] = proxytransform[i+12] - prevProxyTransform[i+12];
+		cursorVold[i] = cursorVnew[i];
+		cursorVnew[i] = proxytransform[i+12] - prevProxyTransform[i+12];
 	}
 
 	for (int i = 0; i < 3; i++) {
-		ballMomentum[i] = ballM*ballVelocity[i] + cursorM*cursorVelocity[i];
+		ballPold[i] = ballPnew[i];
+		ballPnew[i] = ballM*ballVnew[i] + cursorM*cursorVnew[i];
+	}
+
+	for (int i = 0; i < 3; i++) {
+		ballVold[i] = ballVnew[i];
+		ballVnew[i] = ballVold[i]*((ballM - cursorM) / (ballM + cursorM)) + cursorVnew[i]*((2*cursorM)/(ballM + cursorM));
 	}
 }
 
@@ -158,46 +181,26 @@ void drawNet(void)
 	glVertex3f(netP[0][1], netP[1][0], netZ);
 	glEnd();
 }
-GLfloat ballM = 1;
-const GLfloat ballDorig[3] = {10.0, -9.0, -5.0};
-GLfloat ballDold[3] = {10.0, -9.0, -5.0};
-GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
-GLfloat ballVold[3] = {0.0, 0.0, 0.0};
-GLfloat ballVnew[3] = {0.0, 0.0, 0.0};
-GLfloat ballPold[3] = {0.0, 0.0, 0.0};
-GLfloat ballPnew[3] = {0.0, 0.0, 0.0};
-
-
-GLfloat cursorM = 10;
-GLfloat cursorDold[3] = {0.0, 0.0, 0.0};
-GLfloat cursorDnew[3] = {0.0, 0.0, 0.0};
-GLfloat cursorVold[3] = {0.0, 0.0, 0.0};
-GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
-GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
-GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
 
 
 GLdouble ballR = 1.0;
 
 void calcNewBallPos() {
-	for (int i = 0; i < 3; i++) {
-		ballDold[i] = ballDnew[i];
-	}
-}
 
-void drawBall(void)
-{
 	for(int i = 0; i < 3; i++)
 	{
 		ballDold[i] = ballDnew[i];
 		ballDnew[i] = ballDold[i] + ballVnew[i];
 	}
+}
 
+void drawBall(void)
+{
 	// re-draw ball in new position
 	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
 	GLUquadric* qobj = gluNewQuadric();
 	glPushMatrix();
-	//calcNewBallPos();
+	calcNewBallPos();
 	glTranslatef(ballDnew[0], ballDnew[1], ballDnew[2]);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
 	gluSphere(qobj, ballR, 9, 9);
@@ -591,7 +594,7 @@ void showInfo() {
 
 	if (goalsScored >= 5) {
 		ss << "Congratulations, you have scored all 5 goals!" << ends;
-		drawString(ss.str().c_str(), 1, 125, color, font);
+		drawString(ss.str().c_str(), 1, 25, color, font);
 		ss.str("");
 
 		exit(0);
