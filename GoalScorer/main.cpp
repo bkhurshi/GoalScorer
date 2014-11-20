@@ -25,7 +25,6 @@ void *font = GLUT_BITMAP_8_BY_13;
 bool mouseLeftDown;
 bool mouseRightDown;
 float mouseX, mouseY;
-GLfloat ballX = 10.0, ballY = -9.0, ballZ = -5.0;
 
 // haptic code begin
 #ifdef HAPTIC
@@ -97,6 +96,7 @@ GLfloat wallN[6][3] = {  /* Normals for the 6 faces of a cube. */
 		{4, 5, 1, 0}, {5, 6, 2, 1}, {7, 4, 0, 3} };
 		GLfloat wallV[8][3];  /* Will be filled in with X,Y,Z vertexes. */
 ;
+
 void drawWalls(void)
 {
 	GLfloat green[4] = {0.0, 1.0, 0.0, 1.0};
@@ -132,13 +132,36 @@ void drawNet(void)
 	glVertex3f(-3.65, -10.0, -59.9);
 	glEnd();
 }
+GLfloat ballM = 1;
+GLfloat ballDold[3] = {10.0, -9.0, -5.0};
+GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
+GLfloat ballVold[3] = {0.0, 0.0, 0.0};
+GLfloat ballVnew[3] = {0.0, 0.0, 0.0};
+GLfloat ballPold[3] = {0.0, 0.0, 0.0};
+GLfloat ballPnew[3] = {0.0, 0.0, 0.0};
+
+
+GLfloat cursorM = 10;
+GLfloat cursorDold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorDnew[3] = {0.0, 0.0, 0.0};
+GLfloat cursorVold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
+GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
 
 void drawBall(void)
 {
+	for(int i = 0; i < 3; i++)
+	{
+		ballDold[i] = ballDnew[i];
+		ballDnew[i] = ballDold[i] + ballVnew[i];
+	}
+
+	// re-draw ball in new position
 	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
 	GLUquadric* qobj = gluNewQuadric();
 	glPushMatrix();
-	glTranslatef(ballX, ballY, ballZ);
+	glTranslatef(ballDnew[0], ballDnew[1], ballDnew[2]);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
 	gluSphere(qobj, 1, 9, 9);
 	glColor3f(0,0,1.);
