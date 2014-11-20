@@ -1,15 +1,17 @@
 
 #include <windows.h>
 #include <GL/glut.h>
+#include <stdio.h> 
+#include <stdlib.h>
+#include <time.h>  
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 
-using std::stringstream;
-using std::cout;
-using std::endl;
-using std::ends;
+using namespace std;
+
 
 //#define HAPTIC // comment this line to take the haptic off
 
@@ -25,6 +27,9 @@ void *font = GLUT_BITMAP_8_BY_13;
 bool mouseLeftDown;
 bool mouseRightDown;
 float mouseX, mouseY;
+
+ofstream logFile;
+int trialNumber;
 
 // haptic code begin
 #ifdef HAPTIC
@@ -208,6 +213,7 @@ void goalDetection(void)
 		(ballDnew[1] - ballR >= netP[1][0] && ballDnew[1] + ballR <= netP[1][1]))
 	{
 		// in Net
+		logFile << goalsScored << "," << time(NULL) << "\n";
 		goalsScored++;
 		
 		// reset ball to start at original position
@@ -540,7 +546,7 @@ void showInfo() {
 
     stringstream ss;
 
-	ss << "You can press the Esc key at any time to abort the program." << ends;
+	ss << "Trial # trialNumber. You can press the Esc key at any time to abort the program." << ends;
 	drawString(ss.str().c_str(), 1, 1, color, font);
 	ss.str("");
 
@@ -647,6 +653,12 @@ void idleCB()
 
 int main(int argc, char **argv)
 {
+	srand (time(NULL));
+	trialNumber = rand() % 1000000;
+	char str[20];
+	sprintf(str,"logs\\2DTrial#%i.log\0", trialNumber);
+	logFile.open(str);
+
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(800*2, 450*2); // window size
@@ -658,6 +670,9 @@ int main(int argc, char **argv)
 	#ifdef HAPTIC
 	initHL(); //initialize haptic device
 	#endif
+	logFile << "Start," << time(NULL) << "\n";
 	glutMainLoop();
+	logFile << "End," << time(NULL) << "\n";
+	logFile.close();
 	return 0;             /* ANSI C requires main to return int. */
 }
