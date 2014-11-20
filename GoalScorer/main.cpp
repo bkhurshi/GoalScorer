@@ -34,6 +34,7 @@ int trialNumber;
 
 GLfloat ballPos[] = {10.0, -9.0, -5.0};
 GLfloat prevBallPos[3];
+GLfloat ballVelocity[] = {0.0, 0.0, 0.0};
 
 // haptic code begin
 #ifdef HAPTIC
@@ -55,6 +56,9 @@ HLuint gBallId;
 
 HLdouble prevProxyTransform[16];
 HLdouble proxytransform[16];
+HLdouble ballMomentum[] = {0.0, 0.0, 0.0};
+// ball/cursor mass
+HLdouble ballM, cursorM;
 
 #define CURSOR_SCALE_SIZE 60
 static double gCursorScale;
@@ -81,8 +85,15 @@ void updateWorkspace();
 void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread, 
                                    HLcache *cache, void *userdata)
 {
+	HLdouble cursorVelocity[3];
+	for (int i = 0; i < 3; i++) {
+		//a12
+		cursorVelocity[i] = proxytransform[i+12] - prevProxyTransform[i+12];
+	}
 
-	
+	for (int i = 0; i < 3; i++) {
+		ballMomentum[i] = ballM*ballVelocity[i] + cursorM*cursorVelocity[i];
+	}
 }
 
 // in case we need it--probably good for walls and such
@@ -163,7 +174,15 @@ GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
 GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
 GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
 
+
 GLdouble ballR = 1.0;
+
+void calcNewBallPos() {
+	for (int i = 0; i < 3; i++) {
+		prevBallPos[i] = ballPos[i];
+	}
+}
+
 void drawBall(void)
 {
 	for(int i = 0; i < 3; i++)
@@ -176,9 +195,8 @@ void drawBall(void)
 	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
 	GLUquadric* qobj = gluNewQuadric();
 	glPushMatrix();
-
+	calcNewBallPos();
 	glTranslatef(ballDnew[0], ballDnew[1], ballDnew[2]);
-
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
 	gluSphere(qobj, ballR, 9, 9);
 	glColor3f(0,0,1.);
