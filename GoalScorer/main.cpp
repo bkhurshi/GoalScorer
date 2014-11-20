@@ -91,11 +91,12 @@ GLfloat wallN[6][3] = {  /* Normals for the 6 faces of a cube. */
 	{1.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {-1.0, 0.0, 0.0},
 	{0.0, 1.0, 0.0}, {0.0, 0.0, -1.0}, {0.0, 0.0, 1.0} };
 
-	GLint wallF[6][4] = {  /* Vertex indices for the 6 faces of a cube. */
-		{0, 1, 2, 3}, {3, 2, 6, 7}, {7, 6, 5, 4},
-		{4, 5, 1, 0}, {5, 6, 2, 1}, {7, 4, 0, 3} };
-		GLfloat wallV[8][3];  /* Will be filled in with X,Y,Z vertexes. */
-;
+
+GLint wallF[6][4] = {  /* Vertex indices for the 6 faces of a cube. */
+	{0, 1, 2, 3}, {3, 2, 6, 7}, {7, 6, 5, 4},
+	{4, 5, 1, 0}, {5, 6, 2, 1}, {7, 4, 0, 3} };
+GLfloat wallV[8][3];  /* Will be filled in with X,Y,Z vertexes. */
+GLfloat wallP[3][2] = {{-30., 30.0}, {-10.0, 10.0}, {-60.0, 0.1}};
 
 void drawWalls(void)
 {
@@ -149,6 +150,7 @@ GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
 GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
 GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
 
+GLdouble ballR = 1.0;
 void drawBall(void)
 {
 	for(int i = 0; i < 3; i++)
@@ -163,11 +165,33 @@ void drawBall(void)
 	glPushMatrix();
 	glTranslatef(ballDnew[0], ballDnew[1], ballDnew[2]);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
-	gluSphere(qobj, 1, 9, 9);
+	gluSphere(qobj, ballR, 9, 9);
 	glColor3f(0,0,1.);
 	glPopMatrix();
 	gluDeleteQuadric(qobj);
 	glEndList();
+}
+
+void wallReflection(void)
+{
+	if(ballDnew[0] - 1 <= wallP[0][0] || ballDnew[0] + 1 >= wallP[0][1])
+	{
+		//Left wall or Right wall
+		ballVold[0] = ballVnew[0];
+		ballVnew[0] = - ballVold[0];
+	}
+	if(ballDnew[1] - 1 <= wallP[1][0] || ballDnew[1] + 1 >= wallP[1][1])
+	{
+		//Bottom wall or Top wall
+		ballVold[1] = ballVnew[1];
+		ballVnew[1] = - ballVold[1];
+	}
+	if(ballDnew[2] - 1 <= wallP[2][0] || ballDnew[2] + 1 >= wallP[2][1])
+	{
+		//Back wall
+		ballVold[2] = ballVnew[2];
+		ballVnew[2] = - ballVold[2];
+	}
 }
 
 void display(void)
@@ -176,6 +200,7 @@ void display(void)
 	drawWalls();
 	drawNet();
 	drawBall();
+	wallReflection();
 	#ifdef HAPTIC
 	drawSceneHaptics();
 	drawHapticCursor();
@@ -187,12 +212,12 @@ void display(void)
 void init(void)
 {
 	/* Setup cube vertex data. */
-	wallV[0][0] = wallV[1][0] = wallV[2][0] = wallV[3][0] = -30;
-	wallV[4][0] = wallV[5][0] = wallV[6][0] = wallV[7][0] = 30;
-	wallV[0][1] = wallV[1][1] = wallV[4][1] = wallV[5][1] = -10;
-	wallV[2][1] = wallV[3][1] = wallV[6][1] = wallV[7][1] = 10;
-	wallV[1][2] = wallV[2][2] = wallV[5][2] = wallV[6][2] = -60;
-	wallV[0][2] = wallV[3][2] = wallV[4][2] = wallV[7][2] = 0.1;
+	wallV[0][0] = wallV[1][0] = wallV[2][0] = wallV[3][0] = wallP[0][0];
+	wallV[4][0] = wallV[5][0] = wallV[6][0] = wallV[7][0] = wallP[0][1];
+	wallV[0][1] = wallV[1][1] = wallV[4][1] = wallV[5][1] = wallP[1][0];
+	wallV[2][1] = wallV[3][1] = wallV[6][1] = wallV[7][1] = wallP[1][1];
+	wallV[1][2] = wallV[2][2] = wallV[5][2] = wallV[6][2] = wallP[2][0];
+	wallV[0][2] = wallV[3][2] = wallV[4][2] = wallV[7][2] = wallP[2][1];
 
 	/* Enable a single OpenGL light. */
 	glLightfv(GL_LIGHT0, GL_AMBIENT_AND_DIFFUSE, light_diffuse);
