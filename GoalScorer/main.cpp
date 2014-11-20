@@ -213,7 +213,7 @@ void goalDetection(void)
 		(ballDnew[1] - ballR >= netP[1][0] && ballDnew[1] + ballR <= netP[1][1]))
 	{
 		// in Net
-		logFile << goalsScored << "," << time(NULL) << "\n";
+		logFile << goalsScored + 1 << "," << time(NULL) << "\n";
 		goalsScored++;
 		
 		// reset ball to start at original position
@@ -546,7 +546,7 @@ void showInfo() {
 
     stringstream ss;
 
-	ss << "Trial # trialNumber. You can press the Esc key at any time to abort the program." << ends;
+	ss << "Trial #" << trialNumber << ". You can press the Esc key at any time to abort the program." << ends;
 	drawString(ss.str().c_str(), 1, 1, color, font);
 	ss.str("");
 
@@ -558,6 +558,8 @@ void showInfo() {
 		ss << "Congratulations, you have scored all 5 goals!" << ends;
 		drawString(ss.str().c_str(), 1, 125, color, font);
 		ss.str("");
+
+		exit(0);
 	}
 
     // restore projection matrix
