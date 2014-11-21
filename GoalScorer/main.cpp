@@ -69,7 +69,7 @@ HLdouble proxytransform[16];
 //HLdouble ballMomentum[] = {0.0, 0.0, 0.0};
 // ball/cursor mass
 //HLdouble ballM, cursorM;
-GLfloat cursorM = 10;
+GLfloat cursorM = 0.25*ballM;
 // position
 GLfloat cursorDold[3] = {0.0, 0.0, 0.0};
 GLfloat cursorDnew[3] = {0.0, 0.0, 0.0};
@@ -107,6 +107,7 @@ void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread,
 {
 	touched = true;
 	//HLdouble cursorVelocity[3];
+	/*
 	for (int i = 0; i < 3; i++) {
 		//a12
 		if(cursorDold[i] == cursorDnew[i])
@@ -115,6 +116,7 @@ void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread,
 		cursorVnew[i] = cursorDnew[i] - cursorDold[i];
 	}
 	cout << "-------\n";
+	*/
 
 	for (int i = 0; i < 3; i++) {
 		ballPold[i] = ballPnew[i];
@@ -319,6 +321,11 @@ void init(void)
 	glutReshapeFunc(reshapeCB);
 	glutKeyboardFunc(keyboardCB);
 	glutMouseFunc(mouseCB);
+}
+
+void exitGracefully() {
+	logFile << "End," << time(NULL) << "\n";
+	logFile.close();
 }
 
 // haptic code begin
@@ -539,10 +546,19 @@ void drawHapticCursor()
 		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
 		glMultMatrixd(proxytransform);
 		logFile << "Cursor velocity:";
+		boolean changeCursorVnew = false;
 		for (int i = 0; i < 3; i++) {
 			cursorDold[i] = cursorDnew[i];
 			cursorDnew[i] = proxytransform[i+12];
-			cursorVnew[i] = cursorDnew[i] - cursorDold[i];
+			if (cursorDnew[i] != cursorDold[i])
+				changeCursorVnew = true;
+		}
+		if (changeCursorVnew) {
+			for (int i = 0; i < 3; i++) {
+				cursorVnew[i] = cursorDnew[i] - cursorDold[i];
+			}
+		}
+		for (int i = 0; i < 3; i++) {
 			logFile << " " << cursorVnew[i];
 		}
 		logFile << "\n";
@@ -610,14 +626,14 @@ void showInfo() {
 		ss << "Congratulations, you have scored all 5 goals!" << ends;
 		drawString(ss.str().c_str(), 1, 25, color, font);
 		ss.str("");
-		logFile << "End," << time(NULL) << "\n";
-		logFile.close();
+		exitGracefully();
 		exit(0);
 	}
 
 	ss << "Ball velocity: " << ballVnew[0] << " " << ballVnew[1] << " " << ballVnew[2] << ends;
 	drawString(ss.str().c_str(), 1, 20, color, font);
 	ss.str("");
+	logFile << "Ball velocity: " << ballVnew[0] << " " << ballVnew[1] << " " << ballVnew[2] << "\n";
 
 	ss << "Cursor velocity: " << cursorVnew[0] << " " << cursorVnew[1] << " " << cursorVnew[2] << ends;
 	drawString(ss.str().c_str(), 1, 35, color, font);
@@ -671,8 +687,7 @@ void keyboardCB(unsigned char key, int x, int y)
     {
     case 27: // ESCAPE
         //clearSharedMem();
-		logFile << "End," << time(NULL) << "\n";
-		logFile.close();
+		exitGracefully();
         exit(0);
         break;
 
@@ -749,7 +764,6 @@ int main(int argc, char **argv)
 	#endif
 	logFile << "Start," << time(NULL) << "\n";
 	glutMainLoop();
-	logFile << "End," << time(NULL) << "\n";
-	logFile.close();
+	exitGracefully();
 	return 0;             /* ANSI C requires main to return int. */
 }
