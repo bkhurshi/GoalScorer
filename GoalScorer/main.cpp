@@ -108,9 +108,12 @@ void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread,
 	//HLdouble cursorVelocity[3];
 	for (int i = 0; i < 3; i++) {
 		//a12
+		if(cursorDold[i] == cursorDnew[i])
+			cout << "CHACHING!!!\n";
 		cursorVold[i] = cursorVnew[i];
 		cursorVnew[i] = cursorDnew[i] - cursorDold[i];
 	}
+	cout << "-------\n";
 
 	for (int i = 0; i < 3; i++) {
 		ballPold[i] = ballPnew[i];
@@ -535,8 +538,6 @@ void drawHapticCursor()
 		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
 		glMultMatrixd(proxytransform);
 		for (int i = 0; i < 3; i++) {
-			if(cursorDold[i] == cursorDnew[i])
-				cout << "CHACHING!!!\n";
 			cursorDold[i] = cursorDnew[i];
 			cursorDnew[i] = proxytransform[i+12];
 			cursorVnew[i] = cursorDnew[i] - cursorDold[i];
