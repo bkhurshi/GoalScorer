@@ -37,6 +37,7 @@ int trialNumber;
 //GLfloat prevBallPos[3];
 //GLfloat ballVelocity[] = {0.0, 0.0, 0.0};
 GLfloat ballM = 1;
+const GLfloat ballDorig[3] = {10.0, -9.0, -5.0};
 GLfloat ballDold[3] = {10.0, -9.0, -5.0};
 GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
 GLfloat ballVold[3] = {0.0, 0.0, 0.0};
@@ -537,11 +538,14 @@ void drawHapticCursor()
 		}
 		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
 		glMultMatrixd(proxytransform);
+		logFile << "Cursor velocity:";
 		for (int i = 0; i < 3; i++) {
 			cursorDold[i] = cursorDnew[i];
 			cursorDnew[i] = proxytransform[i+12];
 			cursorVnew[i] = cursorDnew[i] - cursorDold[i];
+			logFile << " " << cursorVnew[i];
 		}
+		logFile << "\n";
         
 		// Apply the local cursor scale factor.
 		glScaled(gCursorScale, gCursorScale, gCursorScale);
@@ -606,7 +610,8 @@ void showInfo() {
 		ss << "Congratulations, you have scored all 5 goals!" << ends;
 		drawString(ss.str().c_str(), 1, 25, color, font);
 		ss.str("");
-
+		logFile << "End," << time(NULL) << "\n";
+		logFile.close();
 		exit(0);
 	}
 
@@ -666,6 +671,8 @@ void keyboardCB(unsigned char key, int x, int y)
     {
     case 27: // ESCAPE
         //clearSharedMem();
+		logFile << "End," << time(NULL) << "\n";
+		logFile.close();
         exit(0);
         break;
 
