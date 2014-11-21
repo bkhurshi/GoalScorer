@@ -33,9 +33,6 @@ ofstream logFile;
 int trialNumber;
 
 
-//GLfloat ballPos[] = {10.0, -9.0, -5.0};
-//GLfloat prevBallPos[3];
-//GLfloat ballVelocity[] = {0.0, 0.0, 0.0};
 GLfloat ballM = 1;
 const GLfloat ballDorig[3] = {10.0, -9.0, -5.0};
 GLfloat ballDold[3] = {10.0, -9.0, -5.0};
@@ -66,9 +63,7 @@ HLuint gBallId;
 
 HLdouble prevProxyTransform[16];
 HLdouble proxytransform[16];
-//HLdouble ballMomentum[] = {0.0, 0.0, 0.0};
-// ball/cursor mass
-//HLdouble ballM, cursorM;
+
 GLfloat cursorM = 0.25*ballM;
 // position
 GLfloat cursorDold[3] = {0.0, 0.0, 0.0};
@@ -106,17 +101,6 @@ void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread,
                                    HLcache *cache, void *userdata)
 {
 	touched = true;
-	//HLdouble cursorVelocity[3];
-	/*
-	for (int i = 0; i < 3; i++) {
-		//a12
-		if(cursorDold[i] == cursorDnew[i])
-			cout << "CHACHING!!!\n";
-		cursorVold[i] = cursorVnew[i];
-		cursorVnew[i] = cursorDnew[i] - cursorDold[i];
-	}
-	cout << "-------\n";
-	*/
 
 	for (int i = 0; i < 3; i++) {
 		ballPold[i] = ballPnew[i];
