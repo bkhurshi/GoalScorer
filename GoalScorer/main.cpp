@@ -77,6 +77,7 @@ GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
 // momentum
 GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
 GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
+boolean touched = false;
 
 #define CURSOR_SCALE_SIZE 60
 static double gCursorScale;
@@ -103,11 +104,12 @@ void updateWorkspace();
 void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread, 
                                    HLcache *cache, void *userdata)
 {
+	touched = true;
 	//HLdouble cursorVelocity[3];
 	for (int i = 0; i < 3; i++) {
 		//a12
 		cursorVold[i] = cursorVnew[i];
-		cursorVnew[i] = proxytransform[i+12] - prevProxyTransform[i+12];
+		cursorVnew[i] = cursorDnew[i] - cursorDold[i];
 	}
 
 	for (int i = 0; i < 3; i++) {
@@ -532,6 +534,13 @@ void drawHapticCursor()
 		}
 		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
 		glMultMatrixd(proxytransform);
+		for (int i = 0; i < 3; i++) {
+			if(cursorDold[i] == cursorDnew[i])
+				cout << "CHACHING!!!\n";
+			cursorDold[i] = cursorDnew[i];
+			cursorDnew[i] = proxytransform[i+12];
+			cursorVnew[i] = cursorDnew[i] - cursorDold[i];
+		}
         
 		// Apply the local cursor scale factor.
 		glScaled(gCursorScale, gCursorScale, gCursorScale);
@@ -599,6 +608,26 @@ void showInfo() {
 
 		exit(0);
 	}
+
+	ss << "Ball velocity: " << ballVnew[0] << " " << ballVnew[1] << " " << ballVnew[2] << ends;
+	drawString(ss.str().c_str(), 1, 20, color, font);
+	ss.str("");
+
+	ss << "Cursor velocity: " << cursorVnew[0] << " " << cursorVnew[1] << " " << cursorVnew[2] << ends;
+	drawString(ss.str().c_str(), 1, 35, color, font);
+	ss.str("");
+
+	ss << "Cursor old position: " << cursorDold[0] << " " << cursorDold[1] << " " << cursorDold[2] << ends;
+	drawString(ss.str().c_str(), 1, 5, color, font);
+	ss.str("");
+
+	ss << "Cursor new position: " << cursorDnew[0] << " " << cursorDnew[1] << " " << cursorDnew[2] << ends;
+	drawString(ss.str().c_str(), 1, 15, color, font);
+	ss.str("");
+
+	ss << "Touched: " << touched << ends;
+	drawString(ss.str().c_str(), 1, 30, color, font);
+	ss.str("");
 
     // restore projection matrix
     glPopMatrix();                   // restore to previous projection matrix
