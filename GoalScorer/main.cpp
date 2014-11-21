@@ -13,7 +13,7 @@
 using namespace std;
 
 
-//#define HAPTIC // comment this line to take the haptic off
+#define HAPTIC // comment this line to take the haptic off
 
 void mouseCB(int button, int stat, int x, int y);
 void keyboardCB(unsigned char key, int x, int y);
@@ -28,8 +28,20 @@ bool mouseLeftDown;
 bool mouseRightDown;
 float mouseX, mouseY;
 
+
 ofstream logFile;
 int trialNumber;
+
+
+GLfloat ballM = 1;
+const GLfloat ballDorig[3] = {10.0, -9.0, -5.0};
+GLfloat ballDold[3] = {10.0, -9.0, -5.0};
+GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
+GLfloat ballVold[3] = {0.0, 0.0, 0.0};
+GLfloat ballVnew[3] = {0.0, 0.0, 0.0};
+GLfloat ballPold[3] = {0.0, 0.0, 0.0};
+GLfloat ballPnew[3] = {0.0, 0.0, 0.0};
+
 
 // haptic code begin
 #ifdef HAPTIC
@@ -49,7 +61,19 @@ HLuint gWallsId;
 HLuint gNetId;
 HLuint gBallId;
 
-GLfloat ballX = 10.0, ballY = -9.0, ballZ = -5.0;
+HLdouble prevProxyTransform[16];
+HLdouble proxytransform[16];
+
+GLfloat cursorM = 0.25*ballM;
+// position
+GLfloat cursorDold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorDnew[3] = {0.0, 0.0, 0.0};
+GLfloat cursorVold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
+// momentum
+GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
+GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
+boolean touched = false;
 
 #define CURSOR_SCALE_SIZE 60
 static double gCursorScale;
@@ -76,8 +100,17 @@ void updateWorkspace();
 void HLCALLBACK touchShapeCallback(HLenum event, HLuint object, HLenum thread, 
                                    HLcache *cache, void *userdata)
 {
+	touched = true;
 
-	
+	for (int i = 0; i < 3; i++) {
+		ballPold[i] = ballPnew[i];
+		ballPnew[i] = ballM*ballVnew[i] + cursorM*cursorVnew[i];
+	}
+
+	for (int i = 0; i < 3; i++) {
+		ballVold[i] = ballVnew[i];
+		ballVnew[i] = ballVold[i]*((ballM - cursorM) / (ballM + cursorM)) + cursorVnew[i]*((2*cursorM)/(ballM + cursorM));
+	}
 }
 
 // in case we need it--probably good for walls and such
@@ -140,37 +173,26 @@ void drawNet(void)
 	glVertex3f(netP[0][1], netP[1][0], netZ);
 	glEnd();
 }
-GLfloat ballM = 1;
-const GLfloat ballDorig[3] = {10.0, -9.0, -5.0};
-GLfloat ballDold[3] = {10.0, -9.0, -5.0};
-GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
-GLfloat ballVold[3] = {0.0, 0.0, 0.0};
-GLfloat ballVnew[3] = {0.0, 0.0, 0.0};
-GLfloat ballPold[3] = {0.0, 0.0, 0.0};
-GLfloat ballPnew[3] = {0.0, 0.0, 0.0};
 
-
-GLfloat cursorM = 10;
-GLfloat cursorDold[3] = {0.0, 0.0, 0.0};
-GLfloat cursorDnew[3] = {0.0, 0.0, 0.0};
-GLfloat cursorVold[3] = {0.0, 0.0, 0.0};
-GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
-GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
-GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
 
 GLdouble ballR = 1.0;
-void drawBall(void)
-{
+
+void calcNewBallPos() {
+
 	for(int i = 0; i < 3; i++)
 	{
 		ballDold[i] = ballDnew[i];
 		ballDnew[i] = ballDold[i] + ballVnew[i];
 	}
+}
 
+void drawBall(void)
+{
 	// re-draw ball in new position
 	GLfloat red[4] = {1.0, 0.0, 0.0, 1.0};
 	GLUquadric* qobj = gluNewQuadric();
 	glPushMatrix();
+	calcNewBallPos();
 	glTranslatef(ballDnew[0], ballDnew[1], ballDnew[2]);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, red); 
 	gluSphere(qobj, ballR, 9, 9);
@@ -285,6 +307,11 @@ void init(void)
 	glutMouseFunc(mouseCB);
 }
 
+void exitGracefully() {
+	logFile << "End," << time(NULL) << "\n";
+	logFile.close();
+}
+
 // haptic code begin
 #ifdef HAPTIC
 /*******************************************************************************
@@ -315,6 +342,11 @@ void initHL()
     gWallsId = hlGenShapes(1);
 	gNetId = hlGenShapes(2);
 	gBallId = hlGenShapes(3);
+
+	for (int i = 0; i < 16; i++) {
+		prevProxyTransform[i] = 0.0;
+		proxytransform[i] = 0.0;
+	}
 
 	 // Setup event callbacks.
     hlAddEventCallback(HL_EVENT_TOUCH, gBallId, HL_CLIENT_THREAD, 
@@ -468,7 +500,7 @@ void drawHapticCursor()
 		//cout<<"redraw"<<endl;
 		static const double kCursorRadius = 0.05;
 		static const int kCursorTess = 15;
-		HLdouble proxytransform[16];
+		//HLdouble proxytransform[16];
 
 		GLUquadricObj *qobj = 0;
 
@@ -492,8 +524,28 @@ void drawHapticCursor()
 		}  
 
 		// Apply the local position/rotation transform of the haptic device proxy.
+		for (int i = 0; i < 16; i++) {
+			prevProxyTransform[i] = proxytransform[i];
+		}
 		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
 		glMultMatrixd(proxytransform);
+		logFile << "Cursor velocity:";
+		boolean changeCursorVnew = false;
+		for (int i = 0; i < 3; i++) {
+			cursorDold[i] = cursorDnew[i];
+			cursorDnew[i] = proxytransform[i+12];
+			if (cursorDnew[i] != cursorDold[i])
+				changeCursorVnew = true;
+		}
+		if (changeCursorVnew) {
+			for (int i = 0; i < 3; i++) {
+				cursorVnew[i] = cursorDnew[i] - cursorDold[i];
+			}
+		}
+		for (int i = 0; i < 3; i++) {
+			logFile << " " << cursorVnew[i];
+		}
+		logFile << "\n";
         
 		// Apply the local cursor scale factor.
 		glScaled(gCursorScale, gCursorScale, gCursorScale);
@@ -556,11 +608,32 @@ void showInfo() {
 
 	if (goalsScored >= 5) {
 		ss << "Congratulations, you have scored all 5 goals!" << ends;
-		drawString(ss.str().c_str(), 1, 125, color, font);
+		drawString(ss.str().c_str(), 1, 25, color, font);
 		ss.str("");
-
+		exitGracefully();
 		exit(0);
 	}
+
+	ss << "Ball velocity: " << ballVnew[0] << " " << ballVnew[1] << " " << ballVnew[2] << ends;
+	drawString(ss.str().c_str(), 1, 20, color, font);
+	ss.str("");
+	logFile << "Ball velocity: " << ballVnew[0] << " " << ballVnew[1] << " " << ballVnew[2] << "\n";
+
+	ss << "Cursor velocity: " << cursorVnew[0] << " " << cursorVnew[1] << " " << cursorVnew[2] << ends;
+	drawString(ss.str().c_str(), 1, 35, color, font);
+	ss.str("");
+
+	ss << "Cursor old position: " << cursorDold[0] << " " << cursorDold[1] << " " << cursorDold[2] << ends;
+	drawString(ss.str().c_str(), 1, 5, color, font);
+	ss.str("");
+
+	ss << "Cursor new position: " << cursorDnew[0] << " " << cursorDnew[1] << " " << cursorDnew[2] << ends;
+	drawString(ss.str().c_str(), 1, 15, color, font);
+	ss.str("");
+
+	ss << "Touched: " << touched << ends;
+	drawString(ss.str().c_str(), 1, 30, color, font);
+	ss.str("");
 
     // restore projection matrix
     glPopMatrix();                   // restore to previous projection matrix
@@ -598,6 +671,7 @@ void keyboardCB(unsigned char key, int x, int y)
     {
     case 27: // ESCAPE
         //clearSharedMem();
+		exitGracefully();
         exit(0);
         break;
 
@@ -674,7 +748,6 @@ int main(int argc, char **argv)
 	#endif
 	logFile << "Start," << time(NULL) << "\n";
 	glutMainLoop();
-	logFile << "End," << time(NULL) << "\n";
-	logFile.close();
+	exitGracefully();
 	return 0;             /* ANSI C requires main to return int. */
 }
