@@ -34,9 +34,9 @@ int trialNumber;
 
 
 GLfloat ballM = 1;
-const GLfloat ballDorig[3] = {10.0, -9.0, -5.0};
-GLfloat ballDold[3] = {10.0, -9.0, -5.0};
-GLfloat ballDnew[3] = {10.0, -9.0, -5.0};
+const GLfloat ballDorig[3] = {10.0, -9.0, -10.0};
+GLfloat ballDold[3] = {10.0, -9.0, -10.0};
+GLfloat ballDnew[3] = {10.0, -9.0, -10.0};
 GLfloat ballVold[3] = {0.0, 0.0, 0.0};
 GLfloat ballVnew[3] = {0.0, 0.0, 0.0};
 GLfloat ballPold[3] = {0.0, 0.0, 0.0};
@@ -159,7 +159,7 @@ void drawWalls(void)
 	}
 }
 
-GLfloat netP[2][2] = {{-3.65, 3.65}, {-10.0, -7.56}};
+GLfloat netP[2][2] = {{-4, 4}, {-10.0, -5}};
 GLfloat netZ = -59.9;
 void drawNet(void)
 {
@@ -174,11 +174,10 @@ void drawNet(void)
 	glEnd();
 }
 
-
 GLdouble ballR = 1.0;
-
+GLdouble gravity = -.001;
+GLdouble resistance = 0.01;
 void calcNewBallPos() {
-
 	for(int i = 0; i < 3; i++)
 	{
 		ballDold[i] = ballDnew[i];
@@ -202,25 +201,33 @@ void drawBall(void)
 	glEndList();
 }
 
-void wallReflection(void)
+void ballPhysics(void)
 {
-	if(ballDnew[0] - ballR <= wallP[0][0] || ballDnew[0] + ballR >= wallP[0][1])
+	// update velocity
+	for(int i = 0; i < 3; i++)
 	{
-		//Left wall or Right wall
-		ballVold[0] = ballVnew[0];
-		ballVnew[0] = - ballVold[0];
+		ballVold[i] = ballVnew[i];
 	}
-	if(ballDnew[1] - ballR <= wallP[1][0] || ballDnew[1] + ballR >= wallP[1][1])
+	
+	// decay (air-resistance)
+	for(int i = 0; i < 3; i++)
 	{
-		//Bottom wall or Top wall
-		ballVold[1] = ballVnew[1];
-		ballVnew[1] = - ballVold[1];
+		ballVnew[i] = ballVnew[i] - ballVnew[i] * resistance;
 	}
-	if(ballDnew[2] - ballR <= wallP[2][0] || ballDnew[2] + ballR >= wallP[2][1])
+
+	// wall Detection
+	for(int i = 0; i < 3; i++)
 	{
-		//Back wall
-		ballVold[2] = ballVnew[2];
-		ballVnew[2] = - ballVold[2];
+		if(ballDnew[i] - ballR <= wallP[i][0] || ballDnew[i] + ballR >= wallP[i][1])
+		{
+			ballVnew[i] = - ballVnew[i];
+		}
+	}
+	
+	// gravity
+	if(ballDnew[1] - 1 > -10 && ballDnew[1] - 1 < 10)
+	{		
+		ballVnew[1] = ballVnew[1] + gravity;
 	}
 }
 
@@ -228,9 +235,10 @@ void goalDetection(void)
 {
 	if(ballDnew[2] - ballR > netZ)
 	{
-		wallReflection(); // don't want to reflect off wall in case of a goal
+		ballPhysics();
 		return; // not a goal
 	}
+
 	if ((ballDnew[0] - ballR >= netP[0][0] && ballDnew[0] + ballR <= netP[0][1]) && 
 		(ballDnew[1] - ballR >= netP[1][0] && ballDnew[1] + ballR <= netP[1][1]))
 	{
@@ -251,7 +259,7 @@ void goalDetection(void)
 	}
 	else
 	{
-		wallReflection(); // don't reflect unless goal
+		ballPhysics();
 	}
 }
 
