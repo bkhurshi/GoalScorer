@@ -327,7 +327,7 @@ void drawScene() {
 // with 3d stereoscopic view (one camera - 2 frustums --> stereoscopy with each eye equal to one frustrum)
 void drawEye(int eye){
 		float dx0=-0.070 / 4.0; // used for moving the frustum
-		float dx1=0.40 / 4.0;   // used for half-distance between 2 eyes
+		float dx1= 2.0 / 4.0; //0.40 / 4.0;   // used for half-distance between 2 eyes
 		glDrawBuffer(GL_BACK_LEFT);
 		if (eye==1){
 			glDrawBuffer (GL_BACK_RIGHT);
@@ -812,7 +812,7 @@ int main(int argc, char **argv)
 	camera.aperture = foview;// field of view
 
 	camera.focalLength = 14;
-    camera.eyeSep = camera.focalLength / 10; // separation of the eyes, right = 60
+    camera.eyeSep = camera.focalLength / 60; // separation of the eyes, right = 60
 
     //camera.focalLength = 70;
     //camera.eyeSep = camera.focalLength /300; // separation of the eyes
