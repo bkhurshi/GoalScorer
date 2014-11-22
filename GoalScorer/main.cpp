@@ -14,6 +14,7 @@ using namespace std;
 
 
 #define HAPTIC // comment this line to take the haptic off
+#define STEREO			// comment to turn stereo off
 #define DTOR            0.0174532925   // DEGREE TO RADIAN
 
 void mouseCB(int button, int stat, int x, int y);
@@ -28,7 +29,6 @@ void *font = GLUT_BITMAP_8_BY_13;
 bool mouseLeftDown;
 bool mouseRightDown;
 float mouseX, mouseY;
-bool stereo = true;
 
 float cameraAngleX = 45.0;
 float cameraAngleY = -145.0;
@@ -178,7 +178,7 @@ GLfloat wallP[3][2] = {{-30., 30.0}, {-10.0, 10.0}, {-60.0, 0.1}};
 void drawWalls(void)
 {
 	GLfloat green[4] = {0.0, 1.0, 0.0, 1.0};
-	GLfloat brown[4] = {0.7, 0.5, 0.2, 1.0};
+	GLfloat brown[4] = {0.7*1.5, 0.5*1.5, 0.2*1.5, 1.0};
 	for (int i = 0; i < 6; i++) {
 		glBegin(GL_QUADS);
 		if(i == 3)
@@ -353,12 +353,12 @@ void drawInStereo() {
 
 void display(void)
 {
-	if (stereo) {
+	#ifdef STEREO
 		drawInStereo();
-	} else {
+	#else
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		drawScene();
-	}
+	#endif
 
 	goalDetection();
 	#ifdef HAPTIC
@@ -379,10 +379,10 @@ void init(void)
 	wallV[0][2] = wallV[3][2] = wallV[4][2] = wallV[7][2] = wallP[2][1];
 
 	/* Enable a single OpenGL light. */
+	glEnable(GL_LIGHTING);
 	glLightfv(GL_LIGHT0, GL_AMBIENT_AND_DIFFUSE, light_diffuse);
 	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 	glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHTING);
 
 
 	/* Use depth buffering for hidden surface elimination. */
@@ -806,6 +806,12 @@ int main(int argc, char **argv)
 	srand (time(NULL));
 	trialNumber = rand() % 1000000;
 	char str[20];
+	bool stereo;
+	#ifdef STEREO
+	stereo = true;
+	#else
+	stereo = false;
+	#endif
 	sprintf(str,"logs\\%sTrial#%i.csv\0", (stereo)?"Stereo":"Mono", trialNumber);
 	logFile.open(str);
 	// parameters for 3d stereoscopy
@@ -831,10 +837,11 @@ int main(int argc, char **argv)
     camera.vu.z = 0;
 
 	glutInit(&argc, argv);
-	if (stereo)
+	#ifdef STEREO
 		glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL | GLUT_STEREO);   // display stereo mode
-	else
+	#else
 		glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	#endif
 	glutInitWindowSize(800*2, 450*2); // window size
 	glutInitWindowPosition(100, 100); // window location
 	int handle = glutCreateWindow("Goal Scorer"); // param is the title of window
@@ -845,10 +852,11 @@ int main(int argc, char **argv)
 	initHL(); //initialize haptic device
 	#endif
 
-	if (stereo)
+	#ifdef STEREO
 		logFile << "Stereo\n" << trialNumber << "\n";
-	else
+	#else
 		logFile << "Mono\n" << trialNumber << "\n";
+	#endif
 	const time_t rawTime = time(NULL);
 	const tm curTime = *localtime(&rawTime);
 	logFile << "Start," << curTime.tm_hour << ":" << curTime.tm_min << ":" << curTime.tm_sec << "\n";
