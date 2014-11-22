@@ -243,8 +243,10 @@ void goalDetection(void)
 		(ballDnew[1] - ballR >= netP[1][0] && ballDnew[1] + ballR <= netP[1][1]))
 	{
 		// in Net
-		logFile << goalsScored + 1 << "," << time(NULL) << "\n";
 		goalsScored++;
+		const time_t rawTime = time(NULL);
+		const tm curTime = *localtime(&rawTime);
+		logFile << goalsScored << "," << curTime.tm_hour << ":" << curTime.tm_min << ":" << curTime.tm_sec << "\n";
 		
 		// reset ball to start at original position
 		for(int i = 0; i < 3; i++)
@@ -316,7 +318,6 @@ void init(void)
 }
 
 void exitGracefully() {
-	logFile << "End," << time(NULL) << "\n";
 	logFile.close();
 }
 
@@ -537,7 +538,6 @@ void drawHapticCursor()
 		}
 		hlGetDoublev(HL_PROXY_TRANSFORM, proxytransform);
 		glMultMatrixd(proxytransform);
-		logFile << "Cursor velocity:";
 		boolean changeCursorVnew = false;
 		for (int i = 0; i < 3; i++) {
 			cursorDold[i] = cursorDnew[i];
@@ -550,10 +550,6 @@ void drawHapticCursor()
 				cursorVnew[i] = cursorDnew[i] - cursorDold[i];
 			}
 		}
-		for (int i = 0; i < 3; i++) {
-			logFile << " " << cursorVnew[i];
-		}
-		logFile << "\n";
         
 		// Apply the local cursor scale factor.
 		glScaled(gCursorScale, gCursorScale, gCursorScale);
@@ -621,27 +617,6 @@ void showInfo() {
 		exitGracefully();
 		exit(0);
 	}
-
-	ss << "Ball velocity: " << ballVnew[0] << " " << ballVnew[1] << " " << ballVnew[2] << ends;
-	drawString(ss.str().c_str(), 1, 20, color, font);
-	ss.str("");
-	logFile << "Ball velocity: " << ballVnew[0] << " " << ballVnew[1] << " " << ballVnew[2] << "\n";
-
-	ss << "Cursor velocity: " << cursorVnew[0] << " " << cursorVnew[1] << " " << cursorVnew[2] << ends;
-	drawString(ss.str().c_str(), 1, 35, color, font);
-	ss.str("");
-
-	ss << "Cursor old position: " << cursorDold[0] << " " << cursorDold[1] << " " << cursorDold[2] << ends;
-	drawString(ss.str().c_str(), 1, 5, color, font);
-	ss.str("");
-
-	ss << "Cursor new position: " << cursorDnew[0] << " " << cursorDnew[1] << " " << cursorDnew[2] << ends;
-	drawString(ss.str().c_str(), 1, 15, color, font);
-	ss.str("");
-
-	ss << "Touched: " << touched << ends;
-	drawString(ss.str().c_str(), 1, 30, color, font);
-	ss.str("");
 
     // restore projection matrix
     glPopMatrix();                   // restore to previous projection matrix
@@ -740,7 +715,7 @@ int main(int argc, char **argv)
 	srand (time(NULL));
 	trialNumber = rand() % 1000000;
 	char str[20];
-	sprintf(str,"logs\\2DTrial#%i.log\0", trialNumber);
+	sprintf(str,"logs\\2DTrial#%i.csv\0", trialNumber);
 	logFile.open(str);
 
 	glutInit(&argc, argv);
@@ -754,7 +729,10 @@ int main(int argc, char **argv)
 	#ifdef HAPTIC
 	initHL(); //initialize haptic device
 	#endif
-	logFile << "Start," << time(NULL) << "\n";
+	logFile << "2D\n" << trialNumber << "\n";
+	const time_t rawTime = time(NULL);
+	const tm curTime = *localtime(&rawTime);
+	logFile << "Start," << curTime.tm_hour << ":" << curTime.tm_min << ":" << curTime.tm_sec << "\n";
 	glutMainLoop();
 	exitGracefully();
 	return 0;             /* ANSI C requires main to return int. */
