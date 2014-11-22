@@ -14,6 +14,7 @@ using namespace std;
 
 
 #define HAPTIC // comment this line to take the haptic off
+#define DTOR            0.0174532925   // DEGREE TO RADIAN
 
 void mouseCB(int button, int stat, int x, int y);
 void keyboardCB(unsigned char key, int x, int y);
@@ -27,11 +28,49 @@ void *font = GLUT_BITMAP_8_BY_13;
 bool mouseLeftDown;
 bool mouseRightDown;
 float mouseX, mouseY;
+bool stereo = true;
+
+float cameraAngleX = 45.0;
+float cameraAngleY = -145.0;
+float cameraDistance;
+
+float ratio=16.0 / 9.0;
+float foview=50.;
 
 
 ofstream logFile;
 int trialNumber;
 
+typedef struct {
+   double x,y,z;
+} XYZ;
+typedef struct {
+   XYZ vp;              /* View position           */
+   XYZ vd;              /* View direction vector   */
+   XYZ vu;              /* View up direction       */
+   double focalLength;  /* Focal Length along vd   */
+   double aperture;     /* Camera aperture         */
+   double eyeSep;       /* Eye separation - interpupilar distance    */
+} CAMERA;
+
+CAMERA camera;
+
+void normalise(XYZ *p);
+XYZ crossProduct(XYZ p1, XYZ p2);
+
+// one camera - 2 frustums --> stereoscopy with each eye equal to one frustrum
+float nNear=30.;
+float nFar=200.;
+float frustumTop = nNear*tan(foview*3.14159/360); 
+float frustumRight = frustumTop*ratio; //top 
+
+// frustum parameters for 2 cameras --> stereoscopy with each eye equal to one camera
+float sleft;	// not named "left" to eliminate ambiguity
+float sright;
+float top;
+float bottom;
+float nearP=30;
+float farP=200;
 
 GLfloat ballM = 1;
 const GLfloat ballDorig[3] = {10.0, -9.0, -10.0};
@@ -73,7 +112,7 @@ GLfloat cursorVnew[3] = {0.0, 0.0, 0.0};
 // momentum
 GLfloat cursorPold[3] = {0.0, 0.0, 0.0};
 GLfloat cursorPnew[3] = {0.0, 0.0, 0.0};
-boolean touched = false;
+bool touched = false;
 
 #define CURSOR_SCALE_SIZE 60
 static double gCursorScale;
@@ -265,17 +304,65 @@ void goalDetection(void)
 	}
 }
 
+void drawScene() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    // save the initial ModelView matrix before modifying ModelView matrix
+	glPushMatrix();
+		drawWalls();
+	glPopMatrix();
+	glPushMatrix();
+		drawNet();
+	glPopMatrix();
+	glPushMatrix();
+		drawBall();
+	glPopMatrix();
+	#ifdef HAPTIC
+	glPushMatrix();
+		drawHapticCursor();
+	glPopMatrix();
+	#endif
+}
+
+// with 3d stereoscopic view (one camera - 2 frustums --> stereoscopy with each eye equal to one frustrum)
+void drawEye(int eye){
+		float dx0=-0.070 / 4.0; // used for moving the frustum
+		float dx1=0.40 / 4.0;   // used for half-distance between 2 eyes
+		glDrawBuffer(GL_BACK_LEFT);
+		if (eye==1){
+			glDrawBuffer (GL_BACK_RIGHT);
+			dx0=-dx0;
+			dx1=-dx1;
+		}
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glFrustum(-frustumRight-dx0, frustumRight-dx0, -frustumTop, frustumTop,nNear,nFar);
+		glTranslatef(0+dx1,0,0);
+		glMatrixMode(GL_MODELVIEW);
+		glShadeModel(GL_SMOOTH);
+		drawScene();
+        glFlush();
+	}
+
+// based on drawEyeLookAt()
+void drawInStereo() {
+	drawEye(1); // draw left eye
+	drawEye(2); // draw right eye
+}
+
 void display(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	drawWalls();
-	drawNet();
-	drawBall();
+	if (stereo) {
+		drawInStereo();
+	} else {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		drawScene();
+	}
 
 	goalDetection();
 	#ifdef HAPTIC
 	drawSceneHaptics();
-	drawHapticCursor();
 	#endif
 	showInfo();
 	glutSwapBuffers();
@@ -462,10 +549,14 @@ void drawSceneHaptics()
     // Use OpenGL commands to create geometry.
     glPushMatrix();
 
-    // tramsform camera
-    //glTranslatef(0, 0, cameraDistance);
-    //glRotatef(cameraAngleX, 1, 0, 0);   // pitch
-    //glRotatef(cameraAngleY, 0, 1, 0);   // heading
+	/*
+	if (stereo) {
+		// tramsform camera
+		glTranslatef(0, 0, cameraDistance);
+		glRotatef(cameraAngleX, 1, 0, 0);   // pitch
+		glRotatef(cameraAngleY, 0, 1, 0);   // heading
+	}
+	*/
 
     //if(dlUsed)
     //    glCallList(listId);     // render with display list
@@ -715,11 +806,35 @@ int main(int argc, char **argv)
 	srand (time(NULL));
 	trialNumber = rand() % 1000000;
 	char str[20];
-	sprintf(str,"logs\\2DTrial#%i.csv\0", trialNumber);
+	sprintf(str,"logs\\%sTrial#%i.csv\0", (stereo)?"Stereo":"Mono", trialNumber);
 	logFile.open(str);
+	// parameters for 3d stereoscopy
+	camera.aperture = foview;// field of view
+
+	camera.focalLength = 14;
+    camera.eyeSep = camera.focalLength / 10; // separation of the eyes, right = 60
+
+    //camera.focalLength = 70;
+    //camera.eyeSep = camera.focalLength /300; // separation of the eyes
+	
+	// position of the camera
+	camera.vp.x = 0;
+    camera.vp.y = 0;
+    camera.vp.z = 30;
+    //view direction vector
+    camera.vd.x = 0; 
+    camera.vd.y = 0; 
+    camera.vd.z = -1;
+    //view up vector
+    camera.vu.x = 0;  
+    camera.vu.y = 1; 
+    camera.vu.z = 0;
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	if (stereo)
+		glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL | GLUT_STEREO);   // display stereo mode
+	else
+		glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(800*2, 450*2); // window size
 	glutInitWindowPosition(100, 100); // window location
 	int handle = glutCreateWindow("Goal Scorer"); // param is the title of window
@@ -729,11 +844,40 @@ int main(int argc, char **argv)
 	#ifdef HAPTIC
 	initHL(); //initialize haptic device
 	#endif
-	logFile << "2D\n" << trialNumber << "\n";
+
+	if (stereo)
+		logFile << "Stereo\n" << trialNumber << "\n";
+	else
+		logFile << "Mono\n" << trialNumber << "\n";
 	const time_t rawTime = time(NULL);
 	const tm curTime = *localtime(&rawTime);
 	logFile << "Start," << curTime.tm_hour << ":" << curTime.tm_min << ":" << curTime.tm_sec << "\n";
+
 	glutMainLoop();
 	exitGracefully();
 	return 0;             /* ANSI C requires main to return int. */
+}
+
+void normalise(XYZ *p)
+{
+   double length;
+
+   length = sqrt(p->x * p->x + p->y * p->y + p->z * p->z);
+   if (length != 0) {
+      p->x /= length;
+      p->y /= length;
+      p->z /= length;
+   } else {
+      p->x = 0;
+      p->y = 0;
+      p->z = 0;
+   }
+}
+
+XYZ crossProduct(XYZ p1, XYZ p2){ 
+	XYZ p3;
+   p3.x = p1.y*p2.z - p1.z*p2.y;
+   p3.y = p1.z*p2.x - p1.x*p2.z;
+   p3.z = p1.x*p2.y - p1.y*p2.x;
+   return p3;
 }
