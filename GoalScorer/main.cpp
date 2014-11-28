@@ -1,4 +1,6 @@
 
+// mostly based on TestTeapotHaptic from Lab 3
+
 #include <windows.h>
 #include <GL/glut.h>
 #include <stdio.h> 
@@ -345,7 +347,7 @@ void drawEye(int eye){
         glFlush();
 	}
 
-// based on drawEyeLookAt()
+// based on drawInStereo() with stereoMethod = 1
 void drawInStereo() {
 	drawEye(1); // draw left eye
 	drawEye(2); // draw right eye
@@ -591,6 +593,8 @@ void drawSceneHaptics()
 
 
 }
+
+// Based on TestStereoHaptic's cursor
 /*******************************************************************************
  Draws a 3D cursor for the haptic device using the current local transform,
  the workspace to world transform and the screen coordinate scale.
